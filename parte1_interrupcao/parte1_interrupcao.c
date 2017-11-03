@@ -2,7 +2,6 @@
 //  Led vermelho acesso por 1s, apagado por 2s
 #include "msp430g2553.h"
 unsigned short seconds = 0x0;
-
 int main(void) {
   WDTCTL = WDTPW + WDTHOLD;   // Desliga Watchdog timer
   P1DIR = 0x01 + 0x40;        // Define pinos 1.0 e 1.6 como saída (0100 0001)

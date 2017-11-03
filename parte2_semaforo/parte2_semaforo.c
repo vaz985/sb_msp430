@@ -1,7 +1,7 @@
-//  Parte 1 - Interrupções
-//  Led vermelho acesso por 1s, apagado por 2s
-#include "msp430g2553.h"
-unsigned short seconds = 0x0;
+// Parte 2 - Semáforo
+// 
+#include "msp430g2553.h"  
+unsigned short seconds = 0x00;
 
 int main(void) {
   WDTCTL = WDTPW + WDTHOLD;   // Desliga Watchdog timer
@@ -20,13 +20,24 @@ int main(void) {
 // Timer A0 interrupt service routine 
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void) {
-  // Acesso
-  if( seconds == 0x0 ) {
-    P1OUT = P1OUT ^ 0x01;
+  // Red
+  if( seconds == 0x00 ) { 
+    P1OUT = P1OUT | 0x01;     
+    P1OUT = P1OUT & ~0x40;                 
   }
-  // Apagado
-  else if( seconds == 0x1 ) {
-    P1OUT = P1OUT ^ 0x1;
+  // Yellow
+  else if( seconds == 0x02 ) {
+    P1OUT |= 0x40;
   }
-  seconds = (seconds + 0x1) % 0x3;
+  // Green
+  else if( seconds == 0x03) {
+    P1OUT &= ~0x01;
+  }
+  // If pressed reduce time left by 5
+  if( (P1IN & 0x08) == 0 ) {
+    if ( seconds >= 0x03 & seconds < 0x08 ) {
+      seconds += 0x04;
+    }
+  }
+  seconds = (seconds + 0x01) % 0x0B;
 } 
