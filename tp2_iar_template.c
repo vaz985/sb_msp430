@@ -10,7 +10,7 @@
 
 #define STACK_SIZE  50
 #define STACK_TOP   STACK_SIZE - 1   
-#define TOTAL_TASKS 2 /*TODO*/
+#define TOTAL_TASKS 3
 
 /*Enable GIE in SR so that the WDT never stops when we go to user task*/
 /*Enable SCG0 for 25MHZ CPU execution*/
@@ -18,16 +18,34 @@
 
 #define SAVE_CONTEXT()           \
   asm ( "push r4  \n\t" \
-                 "push r5  \n\t" \
-                 /*TODO*/
-               );
+        "push r5  \n\t" \
+        "push r6  \n\t" \
+        "push r7  \n\t" \
+        "push r8  \n\t" \
+        "push r9  \n\t" \
+        "push r10  \n\t" \
+        "push r11  \n\t" \
+        "push r12  \n\t" \
+        "push r13  \n\t" \
+        "push r14  \n\t" \
+        "push r15  \n\t" \
+      );
 
 #define RESTORE_CONTEXT()       \
-  asm ( /*TODO*/
-                 "pop r5  \n\t" \
-                 "pop r4  \n\t" \
-                 "reti    \n\t" \
-               );
+  asm ( "pop r15  \n\t" \
+        "pop r14  \n\t" \
+        "pop r13  \n\t" \
+        "pop r12  \n\t" \
+        "pop r11  \n\t" \
+        "pop r10  \n\t" \
+        "pop r9  \n\t" \
+        "pop r8  \n\t" \
+        "pop r7  \n\t" \
+        "pop r6  \n\t" \
+        "pop r5  \n\t" \
+        "pop r4  \n\t" \
+        "reti    \n\t" \
+      );
 
 /*stack for each task*/
 uint16_t task1ram[STACK_SIZE];
@@ -43,12 +61,28 @@ volatile uint8_t button1 = 0x1, button2=0x1; /*volatile since its a shared resou
 
 void task1(void)
 { 
-  /*TODO*/
+  volatile unsigned int delay;
+  P1DIR |= BIT0;
+  while(1) {
+    if( button1 ){
+      for( delay = 0; delay < 65535; delay++ );
+      for( delay = 0; delay < 65535; delay++ );
+      for( delay = 0; delay < 65535; delay++ );
+      P1OUT ^= BIT0;
+    }
+  }
 }
 
 void task2(void)
-{
- /*TODO*/
+{  
+  volatile unsigned int delay;
+  P4DIR |= BIT7;
+  while(1) {
+    if( button2 ){
+      for( delay = 0; delay < 65535; delay++ );
+      P4OUT ^= BIT7;
+    }
+  }
 }
 
 void task3(void)
@@ -91,19 +125,13 @@ uint16_t *initialise_stack(void (* func)(void), uint16_t *stack_location)
 volatile uint16_t *temp;
 void main(void)
 {
-  
   //Stop the watchdog timer until we configure our scheduler
   WDTCTL = WDTPW + WDTHOLD;
- 
   
   /*initialise stack for each task*/
   stack_pointer[0] = initialise_stack(task1, &task1ram[STACK_TOP]);
-  /*TODO*/
-  // initialize stack 1
-  // initialize stack 2
-  
-
-  
+  stack_pointer[1] = initialise_stack(task2, &task2ram[STACK_TOP]);
+  stack_pointer[2] = initialise_stack(task3, &task3ram[STACK_TOP]);
 
   CCTL0 = CCIE;               // Habilita interrupção de comparação do timer A           
   TACTL = TASSEL_2+MC_3+ID_3; // SMCLK = 1 MHz, SMCLK/8 = 125 KHz (8 us)      
@@ -114,28 +142,29 @@ void main(void)
   /*initialise to first task*/
   task_id = 0;
   temp = stack_pointer[task_id];
-
-
   asm ("mov.w  temp, r1 \n\t");
   _BIS_SR(GIE);  
   // lets pop our first task out!
-
   RESTORE_CONTEXT();
 }
 
 
 
 #pragma vector=TIMER0_A0_VECTOR
+// Scheduler
 __interrupt void Timer_A (void)
 {
   //0 -Save Context 
-
+  SAVE_CONTEXT();
   //1-Load Stack Pointer
-
+  asm volatile ("mov.w r1, temp \n\t");
+  stack_pointer[task_id] = temp;
   //2-update the task id
-
+  task_id = (task_id+1) % TOTAL_TASKS;
   //3-Save Stack pointer
-
+  temp = stack_pointer[task_id];
+  asm volatile ("mov.w temp, r1 \n\t");
   //4 Load Context 
+  RESTORE_CONTEXT():
   
 }
