@@ -5,7 +5,7 @@
 
 #define STACK_SIZE  50
 #define STACK_TOP   STACK_SIZE - 1   
-#define TOTAL_TASKS 2 /*TODO*/
+#define TOTAL_TASKS 3 /*TODO*/
 
 #define LOAD_STACK_POINTER(temp) \
     __asm__ volatile ("mov.w r1, %0 \n\t" \
@@ -21,17 +21,37 @@
 #define DEFAULT_SR  ((uint16_t)0x0048) 
 
 #define SAVE_CONTEXT()           \
-  asm volatile ( /*TODO*/
-                 "push r4  \n\t" \
-                 "push r5  \n\t" \
-               );
+   asm ( "push r4  \n\t" \
+        "push r5  \n\t" \
+        "push r6  \n\t" \
+        "push r7  \n\t" \
+        "push r8  \n\t" \
+        "push r9  \n\t" \
+        "push r10  \n\t" \
+        "push r11  \n\t" \
+        "push r12  \n\t" \
+        "push r13  \n\t" \
+        "push r14  \n\t" \
+        "push r15  \n\t" \
+      );
+
 
 #define RESTORE_CONTEXT()       \
-  asm volatile ( /*TODO*/
-                 "pop r5  \n\t" \
-                 "pop r4  \n\t" \
-                 "reti    \n\t" \
-               );
+  asm ( "pop r15  \n\t" \
+        "pop r14  \n\t" \
+        "pop r13  \n\t" \
+        "pop r12  \n\t" \
+        "pop r11  \n\t" \
+        "pop r10  \n\t" \
+        "pop r9  \n\t" \
+        "pop r8  \n\t" \
+        "pop r7  \n\t" \
+        "pop r6  \n\t" \
+        "pop r5  \n\t" \
+        "pop r4  \n\t" \
+        "reti    \n\t" \
+      );
+
 
 
 /*stack for each task - 1024*16 = 2KB RAM*/
@@ -130,13 +150,15 @@ __interrupt void Timer_A (void)
 {
 
   //0 -Save Context 
-
+  SAVE_CONTEXT()
   //1-Load Stack Pointer
-
+  asm volatile ("mov.w r1, temp \n\t");
+  stack_pointer[task_id] = temp;
   //2-update the task id
-
+  task_id = (task_id+1) % TOTAL_TASKS;
   //3-Save Stack pointer
-
+  temp = stack_pointer[task_id];
+  asm volatile ("mov.w temp, r1 \n\t");
   //4 Load Context 
-  
+  RESTORE_CONTEXT() 
 }
