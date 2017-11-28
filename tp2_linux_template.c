@@ -66,36 +66,43 @@ volatile uint16_t *stack_pointer[TOTAL_TASKS]; /*address of stack pointer for ea
 volatile uint8_t button1 = 0x1, button2=0x1; /*volatile since its a shared resource between tasks*/
 /*****************************************************/
 
+volatile uint8_t t1 = 0x01;
+volatile uint8_t t2 = 0x40;
+
 void task1(void)
 { 
-  volatile unsigned int delay;
+  volatile uint16_t delay;
+  volatile uint8_t  times;
   P1DIR = 0x01;
   while(1) {
-    if( button1 ){
-      for( delay = 0; delay < 65535; delay++ );
-      for( delay = 0; delay < 65535; delay++ );
-      for( delay = 0; delay < 65535; delay++ );
-      P1OUT ^= 0x01;
-    }
+      for( times = 0; times < 2;    times++ );
+        for( delay = 0; delay < 65535; delay++ );
+      P1OUT ^= t1;
   }
 
 }
 
 void task2(void)
 {
-  volatile unsigned int delay;
+  volatile uint16_t delay;
+  volatile uint8_t  times;
   P1DIR = 0x40;
   while(1) {
-    if( button2 ){
-      for( delay = 0; delay < 65535; delay++ );
-      P1OUT ^= 0x40;
-    }
+      for( times = 0; times < 10;    times++ );
+        for( delay = 0; delay < 65535; delay++ );
+      P1OUT ^= t2;
   }
 }
 
 void task3(void)
 {
-/*TODO*/
+  P1OUT = 0x08;
+  if( P1IN & 0x08 == 0 ) {
+    uint8_t aux;
+    aux = t1;
+    t1 = t2;
+    t2 = t1;
+  }
 }
 
 
@@ -131,26 +138,22 @@ uint16_t *initialise_stack(void (* func)(void), uint16_t *stack_location)
 
 
   
-volatile uint16_t *temp;
+volatile int16_t *temp;
 void main(void)
 {
   
   //Stop the watchdog timer until we configure our scheduler
   WDTCTL = WDTPW + WDTHOLD;
- 
   
   /*initialise stack for each task*/
   stack_pointer[0] = initialise_stack(task1, &task1ram[STACK_TOP]); // initialize stack 0
   stack_pointer[1] = initialise_stack(task2, &task2ram[STACK_TOP]); // initialize stack 0
   //stack_pointer[2] = initialise_stack(task3, &task3ram[STACK_TOP]); // initialize stack 0
   
-  
-
   CCTL0 = CCIE;               // Habilita interrupção de comparação do timer A           
   TACTL = TASSEL_2+MC_3+ID_3; // SMCLK = 1 MHz, SMCLK/8 = 125 KHz (8 us)      
   CCR0 =  62500;              // Modo up/down: chega no valor e depois volta
 
-  
   /*initialise to first task*/
   task_id = 0;
   temp = stack_pointer[task_id];
@@ -165,7 +168,6 @@ void main(void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
-
   //0 -Save Context 
   SAVE_CONTEXT()
   //1-Load Stack Pointer
