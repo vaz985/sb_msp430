@@ -5,7 +5,7 @@
 
 #define STACK_SIZE  50
 #define STACK_TOP   STACK_SIZE - 1   
-#define TOTAL_TASKS 3 /*TODO*/
+#define TOTAL_TASKS 2 /*TODO*/
 
 #define LOAD_STACK_POINTER(temp) \
     __asm__ volatile ("mov.w r1, %0 \n\t" \
@@ -68,12 +68,29 @@ volatile uint8_t button1 = 0x1, button2=0x1; /*volatile since its a shared resou
 
 void task1(void)
 { 
-/*TODO*/
+  volatile unsigned int delay;
+  P1DIR = 0x01;
+  while(1) {
+    if( button1 ){
+      for( delay = 0; delay < 65535; delay++ );
+      for( delay = 0; delay < 65535; delay++ );
+      for( delay = 0; delay < 65535; delay++ );
+      P1OUT ^= 0x01;
+    }
+  }
+
 }
 
 void task2(void)
 {
-/*TODO*/
+  volatile unsigned int delay;
+  P1DIR = 0x40;
+  while(1) {
+    if( button2 ){
+      for( delay = 0; delay < 65535; delay++ );
+      P1OUT ^= 0x40;
+    }
+  }
 }
 
 void task3(void)
@@ -124,9 +141,9 @@ void main(void)
   
   /*initialise stack for each task*/
   stack_pointer[0] = initialise_stack(task1, &task1ram[STACK_TOP]); // initialize stack 0
-  /*TODO*/
-  // initialize stack 1
-  // initialize stack 2
+  stack_pointer[1] = initialise_stack(task2, &task2ram[STACK_TOP]); // initialize stack 0
+  //stack_pointer[2] = initialise_stack(task3, &task3ram[STACK_TOP]); // initialize stack 0
+  
   
 
   CCTL0 = CCIE;               // Habilita interrupção de comparação do timer A           
